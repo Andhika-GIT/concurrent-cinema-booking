@@ -22,11 +22,11 @@ func (s *MemoryStore) Book(b Booking) error {
 	return nil
 }
 
-func (s *MemoryStore) ListBookings(b Booking) []Booking {
+func (s *MemoryStore) ListBookings(movieID string) []Booking {
 	var bookings []Booking
 
 	for _, booking := range s.bookings {
-		if booking.MovieID == b.MovieID {
+		if booking.MovieID == movieID {
 			bookings = append(bookings, booking)
 		}
 	}
