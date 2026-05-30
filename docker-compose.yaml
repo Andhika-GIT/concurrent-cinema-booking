@@ -1,6 +1,6 @@
 services:
   redis:
-    container_name: redis
-    image: redis:7-alpine
+    container_name: cinema_booking_c_redis
+    image: redis:7.4-alpine
     ports:
-      - "6379:6379"
+      - "63795:6379"
