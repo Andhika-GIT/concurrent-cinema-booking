@@ -4,3 +4,12 @@ services:
     image: redis:7.4-alpine
     ports:
       - "63795:6379"
+  redis-commander:
+    container_name: cinemac_booking_c_redis-commander
+    hostname: redis-commander
+    image: ghcr.io/joeferner/redis-commander:v0.9.5
+    restart: always
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    ports:
+      - "8082:8081"
