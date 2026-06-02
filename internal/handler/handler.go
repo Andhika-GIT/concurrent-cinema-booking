@@ -16,6 +16,7 @@ type movieResponse struct {
 
 type BookingHandlerInterface interface {
 	ListMovies(w http.ResponseWriter, r *http.Request)
+	ListSeats(w http.ResponseWriter, r *http.Request)
 }
 
 type BookingHandler struct {
@@ -32,11 +33,36 @@ func (b *BookingHandler) ListMovies(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, movies)
 }
 
-// ================== HELPER FUNCTION ================== //
+func (b *BookingHandler) ListSeats(w http.ResponseWriter, r *http.Request) {
+	movieID := r.PathValue("movieID")
+
+	bookings := b.service.ListBookings(movieID)
+
+	seats := make([]seatInfo, 0, len(bookings))
+	for _, b := range bookings {
+		seats = append(seats, seatInfo{
+			SeatID:    b.SeatID,
+			UserID:    b.UserID,
+			Booked:    true,
+			Confirmed: b.Status == "confirmed",
+		})
+	}
+
+	writeJSON(w, http.StatusOK, seats)
+}
+
+// ================== HELPER ================== //
 
 var movies = []movieResponse{
 	{ID: "inception", Title: "Inception", Rows: 5, SeatsPerRow: 8},
 	{ID: "dune", Title: "Dune: Part Two", Rows: 4, SeatsPerRow: 6},
+}
+
+type seatInfo struct {
+	SeatID    string `json:"seat_id"`
+	UserID    string `json:"user_id"`
+	Booked    bool   `json:"booked"`
+	Confirmed bool   `json:"confirmed"`
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {
