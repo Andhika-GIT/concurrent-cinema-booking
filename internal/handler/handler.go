@@ -2,21 +2,17 @@ package handler
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
+	"time"
 
 	"github.com/Andhika-GIT/concurrent-cinema-booking/internal/booking"
 )
 
-type movieResponse struct {
-	ID          string `json:"id"`
-	Title       string `json:"title"`
-	Rows        int    `json:"rows"`
-	SeatsPerRow int    `json:"seats_per_row"`
-}
-
 type BookingHandlerInterface interface {
 	ListMovies(w http.ResponseWriter, r *http.Request)
 	ListSeats(w http.ResponseWriter, r *http.Request)
+	HoldSeat(w http.ResponseWriter, r *http.Request)
 }
 
 type BookingHandler struct {
@@ -51,11 +47,52 @@ func (b *BookingHandler) ListSeats(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, seats)
 }
 
+func (b *BookingHandler) HoldSeat(w http.ResponseWriter, r *http.Request) {
+	movieID := r.PathValue("movieID")
+	seatID := r.PathValue("seatID")
+
+	var req holdRequest
+
+	err := json.NewDecoder(r.Body).Decode(&req)
+
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	session, err := b.service.Book(booking.Booking{
+		UserID:  req.UserID,
+		SeatID:  seatID,
+		MovieID: movieID,
+	})
+
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, holdResponse{
+		SeatID:    seatID,
+		MovieID:   movieID,
+		SessionID: session.ID,
+		ExpiresAt: session.ExpiresAt.Format(time.RFC3339),
+	})
+}
+
 // ================== HELPER ================== //
 
-var movies = []movieResponse{
-	{ID: "inception", Title: "Inception", Rows: 5, SeatsPerRow: 8},
-	{ID: "dune", Title: "Dune: Part Two", Rows: 4, SeatsPerRow: 6},
+type movieResponse struct {
+	ID          string `json:"id"`
+	Title       string `json:"title"`
+	Rows        int    `json:"rows"`
+	SeatsPerRow int    `json:"seats_per_row"`
+}
+
+type holdResponse struct {
+	SessionID string `json:"session_id"`
+	MovieID   string `json:"movieID"`
+	SeatID    string `json:"seat_id"`
+	ExpiresAt string `json:"expires_at"`
 }
 
 type seatInfo struct {
@@ -63,6 +100,15 @@ type seatInfo struct {
 	UserID    string `json:"user_id"`
 	Booked    bool   `json:"booked"`
 	Confirmed bool   `json:"confirmed"`
+}
+
+type holdRequest struct {
+	UserID string `json:"user_id"`
+}
+
+var movies = []movieResponse{
+	{ID: "inception", Title: "Inception", Rows: 5, SeatsPerRow: 8},
+	{ID: "dune", Title: "Dune: Part Two", Rows: 4, SeatsPerRow: 6},
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {

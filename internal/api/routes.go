@@ -10,4 +10,5 @@ func SetupRoutes(mux *http.ServeMux, bookingHandler handler.BookingHandlerInterf
 	mux.Handle("GET /", http.FileServer(http.Dir("static")))
 	mux.HandleFunc("GET /movies", bookingHandler.ListMovies)
 	mux.HandleFunc("GET /movies/{movieID}/seats", bookingHandler.ListSeats)
+	mux.HandleFunc("POST /movies/{movieID}/seats/{seatID}/hold", bookingHandler.HoldSeat)
 }

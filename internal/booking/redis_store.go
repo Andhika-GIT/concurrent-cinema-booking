@@ -30,16 +30,16 @@ func sessionKey(id string) string {
 	return fmt.Sprintf("session:%s", id)
 }
 
-func (r *RedisStore) Book(b Booking) error {
+func (r *RedisStore) Book(b Booking) (Booking, error) {
 	session, err := r.Hold(b)
 
 	if err != nil {
-		return err
+		return Booking{}, err
 	}
 
 	log.Printf("session booked %v", session)
 
-	return nil
+	return session, nil
 }
 
 func parseSession(val string) (Booking, error) {
