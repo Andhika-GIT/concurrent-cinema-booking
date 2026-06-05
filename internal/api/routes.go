@@ -11,4 +11,6 @@ func SetupRoutes(mux *http.ServeMux, bookingHandler handler.BookingHandlerInterf
 	mux.HandleFunc("GET /movies", bookingHandler.ListMovies)
 	mux.HandleFunc("GET /movies/{movieID}/seats", bookingHandler.ListSeats)
 	mux.HandleFunc("POST /movies/{movieID}/seats/{seatID}/hold", bookingHandler.HoldSeat)
+	mux.HandleFunc("PUT /sessions/{sessionID}/confirm", bookingHandler.ConfirmSession)
+	mux.HandleFunc("DELETE /sessions/{sessionID}", bookingHandler.ReleaseSession)
 }

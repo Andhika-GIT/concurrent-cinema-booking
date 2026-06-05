@@ -22,4 +22,6 @@ type Booking struct {
 type BookingStore interface {
 	Book(b Booking) (Booking, error)
 	ListBookings(movieID string) []Booking
+	ConfirmSession(sessionID string) error
+	ReleaseSession(sessionID string) error
 }

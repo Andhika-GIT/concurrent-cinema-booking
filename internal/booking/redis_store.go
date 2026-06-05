@@ -25,11 +25,6 @@ func NewRedisStore(rdb *redis.Client) *RedisStore {
 	}
 }
 
-// sessionKey builds the reverse-lookup key for a session
-func sessionKey(id string) string {
-	return fmt.Sprintf("session:%s", id)
-}
-
 func (r *RedisStore) Book(b Booking) (Booking, error) {
 	session, err := r.Hold(b)
 
@@ -40,20 +35,6 @@ func (r *RedisStore) Book(b Booking) (Booking, error) {
 	log.Printf("session booked %v", session)
 
 	return session, nil
-}
-
-func parseSession(val string) (Booking, error) {
-	var data Booking
-	if err := json.Unmarshal([]byte(val), &data); err != nil {
-		return Booking{}, err
-	}
-	return Booking{
-		ID:      data.ID,
-		MovieID: data.MovieID,
-		SeatID:  data.SeatID,
-		UserID:  data.UserID,
-		Status:  data.Status,
-	}, nil
 }
 
 func (s *RedisStore) ListBookings(movieID string) []Booking {
@@ -107,5 +88,68 @@ func (r *RedisStore) Hold(b Booking) (Booking, error) {
 		UserID:    b.UserID,
 		Status:    "held",
 		ExpiresAt: now.Add(defaultHoldTTL),
+	}, nil
+}
+
+func (r *RedisStore) ConfirmSession(sessionID string) error {
+	ctx := context.Background()
+
+	seatKey, err := r.rdb.Get(ctx, sessionKey(sessionID)).Result()
+
+	if err != nil {
+		return err
+	}
+
+	_, err = r.rdb.Persist(ctx, sessionKey(sessionID)).Result()
+
+	if err != nil {
+		return err
+	}
+
+	_, err = r.rdb.Persist(ctx, seatKey).Result()
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *RedisStore) ReleaseSession(sessionID string) error {
+	ctx := context.Background()
+
+	seatKey, err := r.rdb.Get(ctx, sessionKey(sessionID)).Result()
+
+	if err != nil {
+		return err
+	}
+
+	err = r.rdb.Del(ctx, sessionKey(sessionID), seatKey).Err()
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// ======================= HELPER FUNCTION ======================= //
+
+// sessionKey builds the reverse-lookup key for a session
+func sessionKey(id string) string {
+	return fmt.Sprintf("session:%s", id)
+}
+
+func parseSession(val string) (Booking, error) {
+	var data Booking
+	if err := json.Unmarshal([]byte(val), &data); err != nil {
+		return Booking{}, err
+	}
+	return Booking{
+		ID:      data.ID,
+		MovieID: data.MovieID,
+		SeatID:  data.SeatID,
+		UserID:  data.UserID,
+		Status:  data.Status,
 	}, nil
 }

@@ -13,6 +13,8 @@ type BookingHandlerInterface interface {
 	ListMovies(w http.ResponseWriter, r *http.Request)
 	ListSeats(w http.ResponseWriter, r *http.Request)
 	HoldSeat(w http.ResponseWriter, r *http.Request)
+	ConfirmSession(w http.ResponseWriter, r *http.Request)
+	ReleaseSession(w http.ResponseWriter, r *http.Request)
 }
 
 type BookingHandler struct {
@@ -57,6 +59,7 @@ func (b *BookingHandler) HoldSeat(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		log.Println(err)
+		writeJSON(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -67,6 +70,7 @@ func (b *BookingHandler) HoldSeat(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err != nil {
+		writeJSON(w, http.StatusConflict, err.Error())
 		log.Println(err)
 		return
 	}
@@ -77,6 +81,34 @@ func (b *BookingHandler) HoldSeat(w http.ResponseWriter, r *http.Request) {
 		SessionID: session.ID,
 		ExpiresAt: session.ExpiresAt.Format(time.RFC3339),
 	})
+}
+
+func (b *BookingHandler) ConfirmSession(w http.ResponseWriter, r *http.Request) {
+	sessionID := r.PathValue("sessionID")
+
+	err := b.service.ConfirmSession(sessionID)
+
+	if err != nil {
+		log.Println(err)
+		writeJSON(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusNoContent, "")
+}
+
+func (b *BookingHandler) ReleaseSession(w http.ResponseWriter, r *http.Request) {
+	sessionID := r.PathValue("sessionID")
+
+	err := b.service.ReleaseSession(sessionID)
+
+	if err != nil {
+		log.Println(err)
+		writeJSON(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusNoContent, "")
 }
 
 // ================== HELPER ================== //
